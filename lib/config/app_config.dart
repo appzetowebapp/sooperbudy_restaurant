@@ -13,7 +13,7 @@ import 'package:flutter/material.dart';
 /// All settings are documented inline for easy customization.
 class AppConfig {
   // ==================== APP IDENTITY ====================
-  static const String appName = 'Indian Bite Restaurants Partner';
+  static const String appName = 'Sooperbuddy Reastaurant';
   static const String appLogoPath = 'assets/images/logo.png';
 
   // ==================== COLORS & THEME ====================
@@ -32,8 +32,9 @@ class AppConfig {
   static const Color exitDialogBackgroundDark = Color(0xFF1E1E1E); // Dark Gray
   static const Color exitDialogTitleColorDark = Color(0xFFFFFFFF); // White
   static const Color exitDialogTextColorDark = Color(0xFFB3B3B3); // Light Gray
-  static const Color exitDialogCancelColorDark =
-      Color(0xFFB3B3B3); // Light Gray
+  static const Color exitDialogCancelColorDark = Color(
+    0xFFB3B3B3,
+  ); // Light Gray
 
   // Exit Dialog - Common
   static const Color exitDialogButtonColor = primaryColor; // Exit button color
@@ -49,13 +50,14 @@ class AppConfig {
 
   // Dark Theme Status Bar
   static const Color statusBarColorDark = Color(0x00000000); // Transparent
-  static const Brightness statusBarIconBrightnessDark = Brightness.light; // Light icons
+  static const Brightness statusBarIconBrightnessDark =
+      Brightness.light; // Light icons
   static const Color navigationBarColorDark = Color(0xFF121212); // Dark Gray
   static const Brightness navigationBarIconBrightnessDark = Brightness.light;
 
   // ==================== WEB URL CONFIGURATION ====================
   // ⚠️ CHANGE THIS URL TO YOUR WEB APPLICATION ⚠️
-  static const String webUrl = 'https://theindianbite.com/food/restaurant';
+  static const String webUrl = 'https://sooperbuddy.in/food/restaurant/login';
 
   /// Role sent with FCM token registration so the backend can target this device.
   static String get appRole {
@@ -69,13 +71,12 @@ class AppConfig {
     return 'user';
   }
 
-
-
   /// Drawable name (res/drawable) — must be white silhouette, not mipmap launcher.
   static const String notificationIcon = '@mipmap/ic_launcher';
 
   // Notification color (used for Android notification LED and accent color)
-  static const Color notificationColor = primaryColor; // Uses primary color by default
+  static const Color notificationColor =
+      primaryColor; // Uses primary color by default
 
   // Notification channel ID (Android)
   static const String notificationChannelId = 'webview_notifications';
@@ -84,7 +85,8 @@ class AppConfig {
   static const String notificationChannelName = 'WebView Notifications';
 
   // Notification channel description (Android)
-  static const String notificationChannelDescription = 'Notifications from the website and push notifications';
+  static const String notificationChannelDescription =
+      'Notifications from the website and push notifications';
 
   // Critical Notification channel ID (Android)
   static const String criticalChannelId = 'critical_order_alerts_v10_sound';
@@ -93,10 +95,12 @@ class AppConfig {
   static const String criticalChannelName = 'New Order Alerts';
 
   // Critical Notification channel description (Android)
-  static const String criticalChannelDescription = 'Urgent notifications for new restaurant orders';
+  static const String criticalChannelDescription =
+      'Urgent notifications for new restaurant orders';
 
   // Critical Silent Notification channel ID (Android)
-  static const String criticalChannelSilentId = 'critical_order_alerts_v10_silent';
+  static const String criticalChannelSilentId =
+      'critical_order_alerts_v10_silent';
 
   // Critical Silent Notification channel name (Android)
   static const String criticalChannelSilentName = 'New Order Alerts (Silent)';
@@ -151,7 +155,6 @@ class AppConfig {
     'Photos',
     'Notifications',
   ];
-
 
   // ==================== UI SETTINGS ====================
   static const double borderRadius = 16.0;

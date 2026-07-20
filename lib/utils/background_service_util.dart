@@ -49,17 +49,23 @@ Future<void> onStart(ServiceInstance service) async {
       );
       await _audioPlayer!.setReleaseMode(ReleaseMode.loop);
     } catch (e) {
-      debugPrint('[RINGTONE_DEBUG] Error configuring persistent AudioPlayer: $e');
+      debugPrint(
+        '[RINGTONE_DEBUG] Error configuring persistent AudioPlayer: $e',
+      );
     }
   }
 
   // -------------------------------------------------------------------------
   // STEP 1: Reset ringtone state and clean up any stale player on every start.
   // -------------------------------------------------------------------------
-  debugPrint('[RINGTONE_DEBUG] Previous _isRinging=$_isRinging, stale player=${_audioPlayer != null}');
+  debugPrint(
+    '[RINGTONE_DEBUG] Previous _isRinging=$_isRinging, stale player=${_audioPlayer != null}',
+  );
 
   _isRinging = false;
-  debugPrint('[RINGTONE_DEBUG] State after reset: _isRinging=$_isRinging, player=${_audioPlayer != null}');
+  debugPrint(
+    '[RINGTONE_DEBUG] State after reset: _isRinging=$_isRinging, player=${_audioPlayer != null}',
+  );
 
   // -------------------------------------------------------------------------
   // STEP 2: Cancel ALL existing subscriptions before re-registering.
@@ -67,14 +73,24 @@ Future<void> onStart(ServiceInstance service) async {
   // and b) the "skipped second order" bug caused by the old _initialized guard
   // that prevented listener re-registration after a stop/restart cycle.
   // -------------------------------------------------------------------------
-  debugPrint('[RINGTONE_DEBUG] Cancelling existing event subscriptions before re-registering...');
-  await _subSetFg?.cancel();         _subSetFg = null;
-  await _subSetBg?.cancel();         _subSetBg = null;
-  await _subStartRingtone?.cancel(); _subStartRingtone = null;
-  await _subStopRingtone?.cancel();  _subStopRingtone = null;
-  await _subStopService?.cancel();   _subStopService = null;
-  _locationTimer?.cancel();          _locationTimer = null;
-  debugPrint('[RINGTONE_DEBUG] All previous subscriptions cancelled. Registering fresh listeners...');
+  debugPrint(
+    '[RINGTONE_DEBUG] Cancelling existing event subscriptions before re-registering...',
+  );
+  await _subSetFg?.cancel();
+  _subSetFg = null;
+  await _subSetBg?.cancel();
+  _subSetBg = null;
+  await _subStartRingtone?.cancel();
+  _subStartRingtone = null;
+  await _subStopRingtone?.cancel();
+  _subStopRingtone = null;
+  await _subStopService?.cancel();
+  _subStopService = null;
+  _locationTimer?.cancel();
+  _locationTimer = null;
+  debugPrint(
+    '[RINGTONE_DEBUG] All previous subscriptions cancelled. Registering fresh listeners...',
+  );
 
   // -------------------------------------------------------------------------
   // STEP 3: Register foreground-service control listeners (Android only).
@@ -89,7 +105,7 @@ Future<void> onStart(ServiceInstance service) async {
     });
 
     service.setForegroundNotificationInfo(
-      title: 'Indian Bite Restaurants Partner Service Active',
+      title: 'Sooperbuddy Reastaurant Service Active',
       content: 'Waiting for new orders...',
     );
   }
@@ -99,20 +115,25 @@ Future<void> onStart(ServiceInstance service) async {
   // -------------------------------------------------------------------------
   if (service is AndroidServiceInstance) {
     _subStartRingtone = service.on('startRingtone').listen((event) async {
-      final orderId = event?['data']?['orderId']
-          ?? event?['data']?['order_id']
-          ?? 'unknown';
+      final orderId =
+          event?['data']?['orderId'] ??
+          event?['data']?['order_id'] ??
+          'unknown';
       debugPrint('[RINGTONE_DEBUG] ── startRingtone received ──');
       debugPrint('[RINGTONE_DEBUG] Order ID: $orderId');
 
       if (_isRinging) {
-        debugPrint('[RINGTONE_DEBUG] Ringtone start skipped reason: already playing');
+        debugPrint(
+          '[RINGTONE_DEBUG] Ringtone start skipped reason: already playing',
+        );
         return;
       }
 
       // Start fresh playback
       _isRinging = true;
-      debugPrint('[RINGTONE_DEBUG] Playing persistent AudioPlayer for order $orderId...');
+      debugPrint(
+        '[RINGTONE_DEBUG] Playing persistent AudioPlayer for order $orderId...',
+      );
       try {
         // Always create a fresh player if the previous one was disposed
         if (_audioPlayer == null) {
@@ -131,12 +152,16 @@ Future<void> onStart(ServiceInstance service) async {
           await _audioPlayer!.setReleaseMode(ReleaseMode.loop);
         }
         await _audioPlayer!.play(AssetSource('audio/order_ringtone.mp3'));
-        debugPrint('[RINGTONE_DEBUG] Ringtone started successfully. _isRinging=$_isRinging');
+        debugPrint(
+          '[RINGTONE_DEBUG] Ringtone started successfully. _isRinging=$_isRinging',
+        );
       } catch (e, stack) {
         debugPrint('[RINGTONE_DEBUG] Error starting ringtone: $e');
         debugPrint('[RINGTONE_DEBUG] Stack: $stack');
         // Player may be in a bad state — dispose and null so next attempt recreates it
-        try { await _audioPlayer?.dispose(); } catch (_) {}
+        try {
+          await _audioPlayer?.dispose();
+        } catch (_) {}
         _audioPlayer = null;
         _isRinging = false;
       }
@@ -168,11 +193,13 @@ Future<void> onStart(ServiceInstance service) async {
         } catch (_) {}
       }
 
-      debugPrint('[RINGTONE_DEBUG] Ringtone stopped and player disposed. State after stop: _isRinging=$_isRinging');
+      debugPrint(
+        '[RINGTONE_DEBUG] Ringtone stopped and player disposed. State after stop: _isRinging=$_isRinging',
+      );
 
       try {
         service.setForegroundNotificationInfo(
-          title: 'Indian Bite Restaurants Partner Service Active',
+          title: 'Sooperbuddy Reastaurant Service Active',
           content: 'Waiting for new orders...',
         );
       } catch (_) {}
@@ -198,13 +225,19 @@ Future<void> onStart(ServiceInstance service) async {
     } catch (_) {}
 
     // Cancel all subscriptions cleanly before stopping
-    await _subSetFg?.cancel();         _subSetFg = null;
-    await _subSetBg?.cancel();         _subSetBg = null;
-    await _subStartRingtone?.cancel(); _subStartRingtone = null;
-    await _subStopRingtone?.cancel();  _subStopRingtone = null;
+    await _subSetFg?.cancel();
+    _subSetFg = null;
+    await _subSetBg?.cancel();
+    _subSetBg = null;
+    await _subStartRingtone?.cancel();
+    _subStartRingtone = null;
+    await _subStopRingtone?.cancel();
+    _subStopRingtone = null;
     // Note: _subStopService cancels itself by stopping the service below
 
-    debugPrint('[RINGTONE_DEBUG] Service stopped cleanly. _isRinging=$_isRinging, player=${_audioPlayer != null}');
+    debugPrint(
+      '[RINGTONE_DEBUG] Service stopped cleanly. _isRinging=$_isRinging, player=${_audioPlayer != null}',
+    );
     service.stopSelf();
   });
   debugPrint('[RINGTONE_DEBUG] stopService listener registered ✓');
@@ -218,9 +251,12 @@ Future<void> onStart(ServiceInstance service) async {
 
       try {
         final position = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.high);
+          desiredAccuracy: LocationAccuracy.high,
+        );
 
-        debugPrint('📍 Background Location: ${position.latitude}, ${position.longitude}');
+        debugPrint(
+          '📍 Background Location: ${position.latitude}, ${position.longitude}',
+        );
 
         service.invoke('update', {
           'latitude': position.latitude,
@@ -232,7 +268,9 @@ Future<void> onStart(ServiceInstance service) async {
     }
   });
 
-  debugPrint('[RINGTONE_DEBUG] onStart() complete. All listeners registered and location timer started.');
+  debugPrint(
+    '[RINGTONE_DEBUG] onStart() complete. All listeners registered and location timer started.',
+  );
 }
 
 @pragma('vm:entry-point')

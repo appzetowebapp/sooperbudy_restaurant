@@ -3869,6 +3869,7 @@ class _WebViewScreenState extends State<WebViewScreen>
                         await _injectLinkInterceptorScript(controller);
                         await _injectApiInterceptorScript(controller);
                         await _injectBlobInterceptorScript(controller);
+                        await _injectFileInputInterceptorScript(controller);
 
                         // Force-resume any AudioContext instances the site
                         // created during initialisation.  At this point the
@@ -5249,6 +5250,104 @@ class _WebViewScreenState extends State<WebViewScreen>
     """;
     if (controller != null) {
       await controller.evaluateJavascript(source: script);
+    }
+  }
+
+  Future<void> _injectFileInputInterceptorScript(InAppWebViewController controller) async {
+    try {
+      const script = r"""
+        (function() {
+          if (window.__fileInputInterceptorInstalled) {
+            return;
+          }
+          window.__fileInputInterceptorInstalled = true;
+
+          function triggerGallery(inputElement) {
+            if (!inputElement.id) {
+              inputElement.id = 'file-input-' + Math.random().toString(36).substr(2, 9);
+            }
+            if (window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
+              window.flutter_inappwebview.callHandler('openGallery').then(function(result) {
+                if (result && result.success) {
+                   window.setFileInputFromBase64(inputElement.id, result.base64, result.fileName, result.mimeType);
+                }
+              });
+            }
+          }
+
+          // 1. Intercept physical clicks (including those on labels pointing to file inputs)
+          document.addEventListener('click', function(e) {
+            var target = e.target;
+            var fileInput = null;
+
+            if (target && target.tagName === 'INPUT' && target.type === 'file') {
+              fileInput = target;
+            } else if (target && target.closest) {
+              var label = target.closest('label');
+              if (label) {
+                if (label.htmlFor) {
+                  var input = document.getElementById(label.htmlFor);
+                  if (input && input.type === 'file') fileInput = input;
+                } else {
+                  var input = label.querySelector('input[type="file"]');
+                  if (input) fileInput = input;
+                }
+              } else {
+                var input = target.closest('input[type="file"]');
+                if (input) fileInput = input;
+              }
+            }
+
+            if (fileInput) {
+              e.preventDefault();
+              e.stopPropagation();
+              triggerGallery(fileInput);
+            }
+          }, true);
+
+          // 2. Intercept programmatic clicks (e.g. element.click())
+          var originalClick = HTMLInputElement.prototype.click;
+          HTMLInputElement.prototype.click = function() {
+            if (this.type === 'file') {
+              triggerGallery(this);
+              return; // Do NOT call original native click to prevent bottom sheet!
+            }
+            return originalClick.apply(this, arguments);
+          };
+          
+          window.setFileInputFromBase64 = function(inputId, base64Data, filename, mimeType) {
+             try {
+                var inputElement = document.getElementById(inputId);
+                if (!inputElement) return false;
+                
+                var byteCharacters = atob(base64Data);
+                var byteNumbers = new Array(byteCharacters.length);
+                for (var i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                var byteArray = new Uint8Array(byteNumbers);
+                var blob = new Blob([byteArray], {type: mimeType});
+                
+                var file = new File([blob], filename, {type: mimeType, lastModified: new Date().getTime()});
+                
+                var dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                
+                inputElement.files = dataTransfer.files;
+                
+                var event = new Event('change', { bubbles: true });
+                inputElement.dispatchEvent(event);
+                return true;
+             } catch(err) {
+                console.error(err);
+                return false;
+             }
+          };
+        })();
+      """;
+      await controller.evaluateJavascript(source: script);
+    } catch (e) {
+      debugPrint('Error injecting file input interceptor: $e');
     }
   }
 }

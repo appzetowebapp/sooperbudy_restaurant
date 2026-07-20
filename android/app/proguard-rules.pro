@@ -1,5 +1,5 @@
 # ============================================================
-# ProGuard / R8 keep rules for Indian Bite Restaurants Partner (Release)
+# ProGuard / R8 keep rules for Sooperbuddy Reastaurant (Release)
 # ============================================================
 # Without these rules, R8 (minifyEnabled true) strips classes
 # used by audioplayers, flutter_background_service, and
