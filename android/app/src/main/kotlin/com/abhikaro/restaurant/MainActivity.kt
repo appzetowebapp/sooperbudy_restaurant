@@ -1,4 +1,4 @@
-package com.indian.bite.restaurant
+package com.buddyserviceappzeto.restaurant
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -14,7 +14,7 @@ import android.util.Log
 import androidx.core.app.NotificationManagerCompat
 
 class MainActivity: FlutterActivity() {
-    private val CHANNEL = "com.indian.bite.restaurant/geolocation"
+    private val CHANNEL = "com.buddyserviceappzeto.restaurant/geolocation"
     private val LOCATION_PERMISSION_REQUEST_CODE = 1
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {

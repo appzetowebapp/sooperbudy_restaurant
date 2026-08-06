@@ -1919,7 +1919,7 @@ class WebViewScreen extends StatefulWidget {
 class _WebViewScreenState extends State<WebViewScreen>
     with WidgetsBindingObserver {
   static const platform =
-      MethodChannel('com.indian.bite.restaurant/geolocation');
+      MethodChannel('com.buddyserviceappzeto.restaurant/geolocation');
   InAppWebViewController? _webViewController;
   bool _isLoading = true;
   double _loadingProgress = 0.0;
@@ -2003,8 +2003,6 @@ class _WebViewScreenState extends State<WebViewScreen>
     });
   }
 
-
-
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -2035,10 +2033,10 @@ class _WebViewScreenState extends State<WebViewScreen>
     debugPrint('🔐 Starting permission request sequence...');
     // 1. Notification Permission
     await _initializeNotifications();
-    
+
     // 2. Location Permission
     await _initializeLocationPermission();
-    
+
     debugPrint('✅ Permission request sequence completed');
   }
 
@@ -2070,8 +2068,6 @@ class _WebViewScreenState extends State<WebViewScreen>
       debugPrint('❌ Error initializing location permission: $e');
     }
   }
-
-
 
   /// Register this device's FCM token with the backend (role + phone for routing).
   Future<void> _registerFCMToken() async {
@@ -2727,12 +2723,14 @@ class _WebViewScreenState extends State<WebViewScreen>
                       '✅ Found Access Token: ${accessToken.substring(0, 15)}...');
 
                   await PrefsUtil.setAccessToken(accessToken);
-                  
+
                   try {
-                    debugPrint('🔔 Login Captured: Starting background service...');
+                    debugPrint(
+                        '🔔 Login Captured: Starting background service...');
                     await BackgroundServiceUtil.start();
                   } catch (serviceStartError) {
-                    debugPrint('⚠️ Error starting background service post-login: $serviceStartError');
+                    debugPrint(
+                        '⚠️ Error starting background service post-login: $serviceStartError');
                   }
 
                   final cleanedPhone = _extractPhoneFromLoginBody(body);
@@ -3614,7 +3612,8 @@ class _WebViewScreenState extends State<WebViewScreen>
                         controller.addJavaScriptHandler(
                           handlerName: 'stopOrderAlertSound',
                           callback: (args) {
-                            debugPrint('[RINGTONE_DEBUG] Web JS called stopOrderAlertSound — IGNORED (ringtone stops only on confirmed API success, not button tap)');
+                            debugPrint(
+                                '[RINGTONE_DEBUG] Web JS called stopOrderAlertSound — IGNORED (ringtone stops only on confirmed API success, not button tap)');
                             // Do NOT stop the ringtone here.
                           },
                         );
@@ -3623,7 +3622,8 @@ class _WebViewScreenState extends State<WebViewScreen>
                         controller.addJavaScriptHandler(
                           handlerName: 'onLogout',
                           callback: (args) async {
-                            debugPrint('🔐 Web JS requested logout: unregistering FCM and clearing session');
+                            debugPrint(
+                                '🔐 Web JS requested logout: unregistering FCM and clearing session');
                             await NotificationService().handleLogout();
                           },
                         );
@@ -3631,17 +3631,24 @@ class _WebViewScreenState extends State<WebViewScreen>
                         controller.addJavaScriptHandler(
                           handlerName: 'onOrderApiCalled',
                           callback: (args) {
-                            final url = args.isNotEmpty ? args[0].toString() : 'Unknown';
-                            final isAccept = url.toLowerCase().contains('accept');
-                            final isReject = url.toLowerCase().contains('reject') ||
-                                            url.toLowerCase().contains('decline') ||
-                                            url.toLowerCase().contains('cancel');
+                            final url = args.isNotEmpty
+                                ? args[0].toString()
+                                : 'Unknown';
+                            final isAccept =
+                                url.toLowerCase().contains('accept');
+                            final isReject =
+                                url.toLowerCase().contains('reject') ||
+                                    url.toLowerCase().contains('decline') ||
+                                    url.toLowerCase().contains('cancel');
                             if (isAccept) {
-                              debugPrint('[RINGTONE_DEBUG] Accept API called: $url (waiting for success response before stopping ringtone)');
+                              debugPrint(
+                                  '[RINGTONE_DEBUG] Accept API called: $url (waiting for success response before stopping ringtone)');
                             } else if (isReject) {
-                              debugPrint('[RINGTONE_DEBUG] Reject API called: $url (waiting for success response before stopping ringtone)');
+                              debugPrint(
+                                  '[RINGTONE_DEBUG] Reject API called: $url (waiting for success response before stopping ringtone)');
                             } else {
-                              debugPrint('[RINGTONE_DEBUG] Order API called: $url');
+                              debugPrint(
+                                  '[RINGTONE_DEBUG] Order API called: $url');
                             }
                           },
                         );
@@ -3649,26 +3656,37 @@ class _WebViewScreenState extends State<WebViewScreen>
                         controller.addJavaScriptHandler(
                           handlerName: 'onOrderApiSuccess',
                           callback: (args) async {
-                            final url = args.isNotEmpty ? args[0].toString() : 'Unknown';
-                            final isAccept = url.toLowerCase().contains('accept');
-                            final isReject = url.toLowerCase().contains('reject') ||
-                                             url.toLowerCase().contains('decline') ||
-                                             url.toLowerCase().contains('cancel');
+                            final url = args.isNotEmpty
+                                ? args[0].toString()
+                                : 'Unknown';
+                            final isAccept =
+                                url.toLowerCase().contains('accept');
+                            final isReject =
+                                url.toLowerCase().contains('reject') ||
+                                    url.toLowerCase().contains('decline') ||
+                                    url.toLowerCase().contains('cancel');
                             final String stopReason;
                             if (isAccept) {
                               stopReason = 'ACCEPT';
-                              debugPrint('[RINGTONE_DEBUG] Accept API success (HTTP 200/201): $url');
-                              debugPrint('[RINGTONE_DEBUG] Stopping ringtone. Reason: $stopReason');
+                              debugPrint(
+                                  '[RINGTONE_DEBUG] Accept API success (HTTP 200/201): $url');
+                              debugPrint(
+                                  '[RINGTONE_DEBUG] Stopping ringtone. Reason: $stopReason');
                             } else if (isReject) {
                               stopReason = 'REJECT';
-                              debugPrint('[RINGTONE_DEBUG] Reject API success (HTTP 200/201): $url');
-                              debugPrint('[RINGTONE_DEBUG] Stopping ringtone. Reason: $stopReason');
+                              debugPrint(
+                                  '[RINGTONE_DEBUG] Reject API success (HTTP 200/201): $url');
+                              debugPrint(
+                                  '[RINGTONE_DEBUG] Stopping ringtone. Reason: $stopReason');
                             } else {
                               stopReason = 'ORDER_API_SUCCESS: $url';
-                              debugPrint('[RINGTONE_DEBUG] Order API success: $url');
-                              debugPrint('[RINGTONE_DEBUG] Stopping ringtone. Reason: $stopReason');
+                              debugPrint(
+                                  '[RINGTONE_DEBUG] Order API success: $url');
+                              debugPrint(
+                                  '[RINGTONE_DEBUG] Stopping ringtone. Reason: $stopReason');
                             }
-                            await NotificationService().stopOrderAlertSound(reason: stopReason);
+                            await NotificationService()
+                                .stopOrderAlertSound(reason: stopReason);
                           },
                         );
 
@@ -3878,7 +3896,8 @@ class _WebViewScreenState extends State<WebViewScreen>
                         // before the first order socket event fires.
                         try {
                           await controller.evaluateJavascript(
-                            source: 'if(typeof window.__webviewAudioResume==="function")'
+                            source:
+                                'if(typeof window.__webviewAudioResume==="function")'
                                 'window.__webviewAudioResume();',
                           );
                         } catch (_) {}
@@ -3902,9 +3921,11 @@ class _WebViewScreenState extends State<WebViewScreen>
                         // Cold-start: app was KILLED and user tapped the notification.
                         // The tap event fired before WebViewScreen subscribed to onTap,
                         // so we stored it in NotificationService and pull it here.
-                        final coldStart = NotificationService().coldStartTapData;
+                        final coldStart =
+                            NotificationService().coldStartTapData;
                         if (coldStart != null &&
-                            NotificationService.isNewOrderNotification(coldStart)) {
+                            NotificationService.isNewOrderNotification(
+                                coldStart)) {
                           NotificationService().consumeColdStartTap();
                           await _openOrderModalInWebView(coldStart);
                         }
@@ -5112,8 +5133,6 @@ class _WebViewScreenState extends State<WebViewScreen>
     );
   }
 
-
-
   // ---------------------------------------------------------------------------
   // Notification-tap → order-modal bridge
   // ---------------------------------------------------------------------------
@@ -5166,9 +5185,8 @@ class _WebViewScreenState extends State<WebViewScreen>
         .toString();
 
     // Build a JS-safe JSON literal from the FCM data map.
-    final safeJson = jsonEncode(data)
-        .replaceAll(r'\', r'\\')
-        .replaceAll("'", r"\'");
+    final safeJson =
+        jsonEncode(data).replaceAll(r'\', r'\\').replaceAll("'", r"\'");
 
     final script = """
 (function() {
@@ -5253,7 +5271,8 @@ class _WebViewScreenState extends State<WebViewScreen>
     }
   }
 
-  Future<void> _injectFileInputInterceptorScript(InAppWebViewController controller) async {
+  Future<void> _injectFileInputInterceptorScript(
+      InAppWebViewController controller) async {
     try {
       const script = r"""
         (function() {

@@ -4,7 +4,7 @@
 // /// Service to manage system-level overlay that works over other apps
 // class SystemOverlayService {
 //   static const MethodChannel _channel =
-//       MethodChannel('com.indian.bite.restaurant/overlay');
+//       MethodChannel('com.buddyserviceappzeto.restaurant/overlay');
 
 //   /// Check if overlay permission is granted
 //   static Future<bool> checkOverlayPermission() async {

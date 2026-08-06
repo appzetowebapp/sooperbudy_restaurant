@@ -10,7 +10,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:56653289892:android:1ec3a68f12f72750e18931",
         "android_client_info": {
-          "package_name": "com.indian.bite.restaurant"
+          "package_name": "com.buddyserviceappzeto.restaurant"
         }
       },
       "oauth_client": [
@@ -18,7 +18,7 @@
           "client_id": "56653289892-g88coo4d7ao9gcnge6aplha1oviva369.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.indian.bite.restaurant",
+            "package_name": "com.buddyserviceappzeto.restaurant",
             "certificate_hash": "eafa3773d53abcec8d5f2093119cb978efce98b1"
           }
         },
