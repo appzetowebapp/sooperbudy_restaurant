@@ -1398,7 +1398,7 @@
 //                             try {
 //                               final XFile? image = await picker.pickImage(
 //                                 source: ImageSource.camera,
-//                                 imageQuality: 80,
+//                                 : 80,
 //                               );
 
 //                               if (image != null) {
@@ -1903,6 +1903,8 @@ import 'package:webview_master_app/utils/download_service.dart';
 import 'package:webview_master_app/widgets/offline_screen.dart';
 import 'package:webview_master_app/widgets/exit_dialog.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_picker_android/image_picker_android.dart';
+import 'package:image_picker_platform_interface/image_picker_platform_interface.dart';
 import 'package:webview_master_app/config/app_config.dart';
 import 'package:webview_master_app/utils/in_app_update_service.dart';
 import 'package:geolocator/geolocator.dart';
@@ -3444,6 +3446,154 @@ class _WebViewScreenState extends State<WebViewScreen>
                           injectionTime:
                               UserScriptInjectionTime.AT_DOCUMENT_START,
                         ),
+                        UserScript(
+                          source: r"""
+(function() {
+  if (window.__fileInputInterceptorInstalled) {
+    return;
+  }
+  window.__fileInputInterceptorInstalled = true;
+  window.__activeFileInput = null;
+
+  function callFlutterGallery(callback) {
+    if (window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
+      window.flutter_inappwebview.callHandler('openGallery').then(callback);
+    } else {
+      var fired = false;
+      var onReady = function() {
+        if (!fired && window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
+          fired = true;
+          window.flutter_inappwebview.callHandler('openGallery').then(callback);
+        }
+      };
+      window.addEventListener('flutterInAppWebViewPlatformReady', onReady, { once: true });
+      var checks = 0;
+      var timer = setInterval(function() {
+        checks++;
+        if (window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
+          clearInterval(timer);
+          if (!fired) {
+            fired = true;
+            window.flutter_inappwebview.callHandler('openGallery').then(callback);
+          }
+        } else if (checks > 30) {
+          clearInterval(timer);
+        }
+      }, 50);
+    }
+  }
+
+  function triggerGallery(inputElement) {
+    window.__activeFileInput = inputElement;
+    if (!inputElement.id) {
+      inputElement.id = 'file-input-' + Math.random().toString(36).substr(2, 9);
+    }
+    callFlutterGallery(function(result) {
+      if (result && result.success) {
+         window.setFileInputFromBase64(inputElement.id, result.base64, result.fileName, result.mimeType);
+      }
+    });
+  }
+
+  function getFileInputFromEvent(e) {
+    var target = e.target;
+    if (!target) return null;
+    if (target.tagName === 'INPUT' && target.type === 'file') {
+      return target;
+    }
+    if (target.closest) {
+      var label = target.closest('label');
+      if (label) {
+        if (label.htmlFor) {
+          var input = document.getElementById(label.htmlFor);
+          if (input && input.type === 'file') return input;
+        } else {
+          var input = label.querySelector('input[type="file"]');
+          if (input) return input;
+        }
+      }
+      var directInput = target.closest('input[type="file"]');
+      if (directInput) return directInput;
+    }
+    return null;
+  }
+
+  // Intercept physical interactions
+  ['touchstart', 'click'].forEach(function(evtName) {
+    document.addEventListener(evtName, function(e) {
+      var fileInput = getFileInputFromEvent(e);
+      if (fileInput) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        triggerGallery(fileInput);
+      }
+    }, true);
+  });
+
+  // Intercept programmatic click()
+  var originalClick = HTMLInputElement.prototype.click;
+  HTMLInputElement.prototype.click = function() {
+    if (this.type === 'file') {
+      triggerGallery(this);
+      return;
+    }
+    return originalClick.apply(this, arguments);
+  };
+
+  // Intercept modern showPicker()
+  if (HTMLInputElement.prototype.showPicker) {
+    var originalShowPicker = HTMLInputElement.prototype.showPicker;
+    HTMLInputElement.prototype.showPicker = function() {
+      if (this.type === 'file') {
+        triggerGallery(this);
+        return;
+      }
+      return originalShowPicker.apply(this, arguments);
+    };
+  }
+  
+  window.setFileInputFromBase64 = function(inputId, base64Data, filename, mimeType) {
+     try {
+        var inputElement = (window.__activeFileInput && window.__activeFileInput.id === inputId) 
+          ? window.__activeFileInput 
+          : document.getElementById(inputId);
+        if (!inputElement) {
+          inputElement = window.__activeFileInput;
+        }
+        if (!inputElement) return false;
+        
+        var byteCharacters = atob(base64Data);
+        var byteNumbers = new Array(byteCharacters.length);
+        for (var i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        var byteArray = new Uint8Array(byteNumbers);
+        var blob = new Blob([byteArray], {type: mimeType || 'image/jpeg'});
+        
+        var file = new File([blob], filename || 'image.jpg', {type: mimeType || 'image/jpeg', lastModified: new Date().getTime()});
+        
+        var dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        
+        inputElement.files = dataTransfer.files;
+        
+        var event = new Event('change', { bubbles: true });
+        inputElement.dispatchEvent(event);
+        
+        var inputEvt = new Event('input', { bubbles: true });
+        inputElement.dispatchEvent(inputEvt);
+        return true;
+     } catch(err) {
+        console.error(err);
+        return false;
+     }
+  };
+})();
+""",
+                          injectionTime:
+                              UserScriptInjectionTime.AT_DOCUMENT_START,
+                        ),
                       ]),
                       initialSettings: InAppWebViewSettings(
                         userAgent:
@@ -3516,11 +3666,6 @@ class _WebViewScreenState extends State<WebViewScreen>
 
                         controller.loadUrl(urlRequest: urlRequest);
                         return true;
-
-                        // ✅ REGISTER FILE CHOOSER HERE (v6.1.5)
-
-                        debugPrint(
-                            '✅ WebView created & file chooser registered');
                       },
                       shouldOverrideUrlLoading:
                           (controller, navigationAction) async {
@@ -3767,7 +3912,7 @@ class _WebViewScreenState extends State<WebViewScreen>
                             try {
                               final XFile? image = await picker.pickImage(
                                 source: ImageSource.camera,
-                                imageQuality: 80,
+                                imageQuality: 50,
                               );
 
                               if (image != null) {
@@ -3794,24 +3939,53 @@ class _WebViewScreenState extends State<WebViewScreen>
                         controller.addJavaScriptHandler(
                           handlerName: 'openGallery',
                           callback: (args) async {
-                            debugPrint('📷 openGallery called');
+                            debugPrint('📷 openGallery called from JS bridge');
+
+                            try {
+                              final ImagePickerPlatform
+                                  imagePickerImplementation =
+                                  ImagePickerPlatform.instance;
+                              if (imagePickerImplementation
+                                  is ImagePickerAndroid) {
+                                imagePickerImplementation
+                                    .useAndroidPhotoPicker = false;
+                              }
+                            } catch (e) {
+                              debugPrint('Photo picker setting note: $e');
+                            }
 
                             final ImagePicker picker = ImagePicker();
 
                             try {
                               final XFile? image = await picker.pickImage(
                                 source: ImageSource.gallery,
-                                imageQuality: 80,
+                                imageQuality: 50,
                               );
 
                               if (image != null) {
                                 final bytes = await image.readAsBytes();
                                 final base64String = base64Encode(bytes);
 
+                                String mimeType =
+                                    image.mimeType ?? 'image/jpeg';
+                                final nameLower = image.name.toLowerCase();
+                                if (nameLower.endsWith('.png')) {
+                                  mimeType = 'image/png';
+                                } else if (nameLower.endsWith('.webp')) {
+                                  mimeType = 'image/webp';
+                                } else if (nameLower.endsWith('.gif')) {
+                                  mimeType = 'image/gif';
+                                } else if (nameLower.endsWith('.jpg') ||
+                                    nameLower.endsWith('.jpeg')) {
+                                  mimeType = 'image/jpeg';
+                                }
+
+                                debugPrint(
+                                    '✅ Gallery image picked successfully: ${image.name}');
                                 return {
                                   'success': true,
                                   'base64': base64String,
-                                  'mimeType': 'image/jpeg',
+                                  'mimeType': mimeType,
                                   'fileName': image.name,
                                 };
                               }
@@ -5097,41 +5271,6 @@ class _WebViewScreenState extends State<WebViewScreen>
     // );
   }
 
-  Widget _buildSourceOption({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(15),
-            decoration: BoxDecoration(
-              color: AppConfig.primaryColor.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              size: 30,
-              color: AppConfig.primaryColor,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   // ---------------------------------------------------------------------------
   // Notification-tap → order-modal bridge
@@ -5266,9 +5405,7 @@ class _WebViewScreenState extends State<WebViewScreen>
         console.log('📦 Blob Interceptor Injected');
       })();
     """;
-    if (controller != null) {
-      await controller.evaluateJavascript(source: script);
-    }
+    await controller.evaluateJavascript(source: script);
   }
 
   Future<void> _injectFileInputInterceptorScript(
@@ -5281,7 +5418,10 @@ class _WebViewScreenState extends State<WebViewScreen>
           }
           window.__fileInputInterceptorInstalled = true;
 
+          window.__activeFileInput = null;
+
           function triggerGallery(inputElement) {
+            window.__activeFileInput = inputElement;
             if (!inputElement.id) {
               inputElement.id = 'file-input-' + Math.random().toString(36).substr(2, 9);
             }
@@ -5294,49 +5434,114 @@ class _WebViewScreenState extends State<WebViewScreen>
             }
           }
 
-          // 1. Intercept physical clicks (including those on labels pointing to file inputs)
-          document.addEventListener('click', function(e) {
-            var target = e.target;
-            var fileInput = null;
+          window.__activeFileInput = null;
 
-            if (target && target.tagName === 'INPUT' && target.type === 'file') {
-              fileInput = target;
-            } else if (target && target.closest) {
+          function callFlutterGallery(callback) {
+            if (window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
+              window.flutter_inappwebview.callHandler('openGallery').then(callback);
+            } else {
+              var fired = false;
+              var onReady = function() {
+                if (!fired && window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
+                  fired = true;
+                  window.flutter_inappwebview.callHandler('openGallery').then(callback);
+                }
+              };
+              window.addEventListener('flutterInAppWebViewPlatformReady', onReady, { once: true });
+              var checks = 0;
+              var timer = setInterval(function() {
+                checks++;
+                if (window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
+                  clearInterval(timer);
+                  if (!fired) {
+                    fired = true;
+                    window.flutter_inappwebview.callHandler('openGallery').then(callback);
+                  }
+                } else if (checks > 30) {
+                  clearInterval(timer);
+                }
+              }, 50);
+            }
+          }
+
+          function triggerGallery(inputElement) {
+            window.__activeFileInput = inputElement;
+            if (!inputElement.id) {
+              inputElement.id = 'file-input-' + Math.random().toString(36).substr(2, 9);
+            }
+            callFlutterGallery(function(result) {
+              if (result && result.success) {
+                 window.setFileInputFromBase64(inputElement.id, result.base64, result.fileName, result.mimeType);
+              }
+            });
+          }
+
+          function getFileInputFromEvent(e) {
+            var target = e.target;
+            if (!target) return null;
+            if (target.tagName === 'INPUT' && target.type === 'file') {
+              return target;
+            }
+            if (target.closest) {
               var label = target.closest('label');
               if (label) {
                 if (label.htmlFor) {
                   var input = document.getElementById(label.htmlFor);
-                  if (input && input.type === 'file') fileInput = input;
+                  if (input && input.type === 'file') return input;
                 } else {
                   var input = label.querySelector('input[type="file"]');
-                  if (input) fileInput = input;
+                  if (input) return input;
                 }
-              } else {
-                var input = target.closest('input[type="file"]');
-                if (input) fileInput = input;
               }
+              var directInput = target.closest('input[type="file"]');
+              if (directInput) return directInput;
             }
+            return null;
+          }
 
-            if (fileInput) {
-              e.preventDefault();
-              e.stopPropagation();
-              triggerGallery(fileInput);
-            }
-          }, true);
+          // Intercept physical interactions
+          ['touchstart', 'click'].forEach(function(evtName) {
+            document.addEventListener(evtName, function(e) {
+              var fileInput = getFileInputFromEvent(e);
+              if (fileInput) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                triggerGallery(fileInput);
+              }
+            }, true);
+          });
 
-          // 2. Intercept programmatic clicks (e.g. element.click())
+          // Intercept programmatic click()
           var originalClick = HTMLInputElement.prototype.click;
           HTMLInputElement.prototype.click = function() {
             if (this.type === 'file') {
               triggerGallery(this);
-              return; // Do NOT call original native click to prevent bottom sheet!
+              return;
             }
             return originalClick.apply(this, arguments);
           };
+
+          // Intercept modern showPicker()
+          if (HTMLInputElement.prototype.showPicker) {
+            var originalShowPicker = HTMLInputElement.prototype.showPicker;
+            HTMLInputElement.prototype.showPicker = function() {
+              if (this.type === 'file') {
+                triggerGallery(this);
+                return;
+              }
+              return originalShowPicker.apply(this, arguments);
+            };
+          }
           
           window.setFileInputFromBase64 = function(inputId, base64Data, filename, mimeType) {
              try {
-                var inputElement = document.getElementById(inputId);
+                var inputElement = (window.__activeFileInput && window.__activeFileInput.id === inputId) 
+                  ? window.__activeFileInput 
+                  : document.getElementById(inputId);
+                if (!inputElement) {
+                  inputElement = window.__activeFileInput;
+                }
                 if (!inputElement) return false;
                 
                 var byteCharacters = atob(base64Data);
@@ -5345,9 +5550,9 @@ class _WebViewScreenState extends State<WebViewScreen>
                     byteNumbers[i] = byteCharacters.charCodeAt(i);
                 }
                 var byteArray = new Uint8Array(byteNumbers);
-                var blob = new Blob([byteArray], {type: mimeType});
+                var blob = new Blob([byteArray], {type: mimeType || 'image/jpeg'});
                 
-                var file = new File([blob], filename, {type: mimeType, lastModified: new Date().getTime()});
+                var file = new File([blob], filename || 'image.jpg', {type: mimeType || 'image/jpeg', lastModified: new Date().getTime()});
                 
                 var dataTransfer = new DataTransfer();
                 dataTransfer.items.add(file);
@@ -5356,6 +5561,9 @@ class _WebViewScreenState extends State<WebViewScreen>
                 
                 var event = new Event('change', { bubbles: true });
                 inputElement.dispatchEvent(event);
+
+                var inputEvt = new Event('input', { bubbles: true });
+                inputElement.dispatchEvent(inputEvt);
                 return true;
              } catch(err) {
                 console.error(err);
