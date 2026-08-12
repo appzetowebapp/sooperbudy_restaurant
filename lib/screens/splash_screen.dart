@@ -134,7 +134,7 @@ class _SplashScreenState extends State<SplashScreen>
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.light, // Light icons for dark bg
         statusBarBrightness: Brightness.dark, // for iOS
-        systemNavigationBarColor: Color(0xFF1A1F4D), // Dark nav bar
+        systemNavigationBarColor: Colors.transparent, // Dark nav bar
         systemNavigationBarIconBrightness: Brightness.light,
       ),
     );
